@@ -154,12 +154,53 @@ synthesiser to reject the artefact and queue a regen.
 |---|---|---|
 | No write outside `~/web2home/` and `~/.claude/` during research | hook `PreToolUse` (Write/Edit) | regex deny |
 | No external network from workers except github.com & code.claude.com | hook `PreToolUse` (WebFetch/Bash) | URL allowlist |
-| No secrets in any file | hook `PreToolUse` (Write) | regex scan for `[A-Z0-9_]{16,}=` |
+| No secrets in any file | hook `PreToolUse` (Write) | targeted secret-pattern scan (see §3.5.1); deny + escalate to `gitleaks` for the actual block |
 | Max output 800 lines for workers | inside worker prompt | self-policed + hook `PostToolUse` |
 | PreCompact handoff mandatory | hook `PreCompact` | runs `hk-pre-compact-handoff.sh` |
 | Skill list capped per session at 30 | hook `SessionStart` | warns + suggests pruning |
 | Stale memory shard (>180 days) | cron `cron-memory-dedupe` | weekly compaction |
 | Skill version drift (>30 days) | cron `cron-self-review` | proposes Edit |
+
+#### 3.5.1 Secret-scan patterns (canonical)
+
+The earlier draft used a broad `[A-Z0-9_]{16,}=` regex; that matches benign
+constants (e.g., `MAX_BUFFER_SIZE_DEFAULT=`) and produced too many false
+positives to be useful. The current `hk-deny-secrets.sh` hook checks the
+**known-prefix** list below — and, when available, escalates to a real
+scanner (`gitleaks detect --no-banner --redact -s -`) which has curated
+rules for hundreds of provider formats.
+
+```
+# Vendor-specific known prefixes (high-precision)
+sk-[A-Za-z0-9]{20,}                        # OpenAI / Anthropic legacy
+sk-ant-[A-Za-z0-9_\-]{20,}                 # Anthropic
+ghp_[A-Za-z0-9]{36}                        # GitHub PAT
+gho_[A-Za-z0-9]{36}                        # GitHub OAuth
+ghu_[A-Za-z0-9]{36}                        # GitHub user-to-server
+ghs_[A-Za-z0-9]{36}                        # GitHub server-to-server
+ghr_[A-Za-z0-9]{36}                        # GitHub refresh
+AKIA[0-9A-Z]{16}                           # AWS Access Key ID
+ASIA[0-9A-Z]{16}                           # AWS STS temp key
+AIza[0-9A-Za-z\-_]{35}                     # Google API key
+xox[abprs]-[0-9A-Za-z\-]{10,}              # Slack tokens
+glpat-[0-9A-Za-z\-_]{20}                   # GitLab PAT
+hf_[A-Za-z0-9]{30,}                        # Hugging Face
+-----BEGIN (RSA |EC |OPENSSH |DSA |PGP |)PRIVATE KEY-----   # PEM blocks
+
+# Context-aware (lower precision; only when key=value adjacency is plain)
+(?i)(api[_-]?key|secret|token|password|access[_-]?key)\s*[:=]\s*['\"]?[A-Za-z0-9_\-]{16,}['\"]?
+```
+
+Rules:
+- Match → hook returns non-zero → write is blocked → user is told which
+  pattern matched (the matched substring is **redacted** in the message).
+- Allow override only via the explicit env `CLAUDE_SECRET_OVERRIDE=1` for a
+  single Bash invocation (tests, fixtures). The override is logged to
+  `{{DROPZONE}}/.telemetry/secret-override.log`.
+- For repos that already have `gitleaks` on the PATH, the hook prefers it
+  over the prefix list; the prefix list is the deterministic fallback.
+- The hook does NOT match arbitrary `[A-Z0-9_]{16,}=`; that produced too
+  many false positives on environment-variable constants and was dropped.
 
 ### 3.6 Project vs. user split
 

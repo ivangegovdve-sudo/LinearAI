@@ -158,13 +158,13 @@ You are the SYNTHESISER. You read pre-digested per-repo research files and
 produce a master plan. You do NOT re-fetch repos. You do NOT run subagents.
 You operate on local files only.
 
-# INPUTS
-- INDEX:       ~/web2home/research/_index.json
-- RESEARCH:    ~/web2home/research/*.md  (schema in handoff-02 §3.4)
-- HANDOFFS:    ~/LinearAI/web2home/web2home-handoff-{04,05,06}-*.md
-- PRIOR_PLAN:  ~/web2home/synthesis/GENESIS-PLAN.md  (may not exist)
+# INPUTS (orchestrator substitutes {{HANDOFF_DIR}} and {{DROPZONE}} to absolute paths)
+- INDEX:       {{DROPZONE}}/research/_index.json
+- RESEARCH:    {{DROPZONE}}/research/*.md  (schema in handoff-02 §3.4)
+- HANDOFFS:    {{HANDOFF_DIR}}/web2home-handoff-{04,05,06}-*.md
+- PRIOR_PLAN:  {{DROPZONE}}/synthesis/GENESIS-PLAN.md  (may not exist)
 
-# OUTPUTS (write all of these; create ~/web2home/synthesis/ if missing)
+# OUTPUTS (write all of these; create {{DROPZONE}}/synthesis/ if missing)
 1. GENESIS-PLAN.md            (shape: handoff-03 §3.6)
 2. decision-matrix.md         (axes: handoff-03 §3.5)
 3. skill-backlog.md
@@ -194,7 +194,7 @@ G. Multi-LLM bridges: produce two tables —
        fields they pull from GENESIS-PLAN.md.
 H. GENESIS-PLAN.md: shape per handoff-03 §3.6. Be concise — lean on links
    to the other four artefacts rather than duplicating text.
-I. Score: append a row to ~/web2home/.telemetry/synthesis-score-history.csv
+I. Score: append a row to {{DROPZONE}}/.telemetry/synthesis-score-history.csv
    with synthesis_score and per-output scores. Score formulas: handoff-06 §6.
 
 # CONSTRAINTS
@@ -204,7 +204,7 @@ I. Score: append a row to ~/web2home/.telemetry/synthesis-score-history.csv
 - Resolve contradictions by listing both options with trade-offs; do NOT
   arbitrarily pick.
 - If diff mode (PRIOR_PLAN exists), output a unified-diff patch in
-  ~/web2home/synthesis/proposed-patches/<isodate>.patch BEFORE rewriting
+  {{DROPZONE}}/synthesis/proposed-patches/<isodate>.patch BEFORE rewriting
   GENESIS-PLAN.md, and apply only after a self-check pass.
 - If your context >70%, /compact preserving "cluster headers, primitives
   list, decision verdicts so far".

@@ -181,6 +181,8 @@ Register in `~/.claude/settings.json`:
     ],
     "PreToolUse": [
       { "matcher": "Write|Edit", "hooks": [{ "type": "command", "command": "~/.claude/hooks/hk-deny-secrets.sh" }] }
+      // hk-deny-secrets.sh uses the targeted prefix list in handoff-04 §3.5.1
+      // (NOT a broad [A-Z0-9_]{16,}= regex). Prefers `gitleaks` when on PATH.
     ]
   }
 }
@@ -226,10 +228,12 @@ efficiency_score: 90
 
 # Body
 1. /clear
-2. Read ~/LinearAI/web2home/web2home-handoff-01-orchestrator.md §8.
+2. Read ${HANDOFF_DIR}/web2home-handoff-01-orchestrator.md §8.
+   (HANDOFF_DIR is set in ~/.claude/settings.json env block; e.g.
+    "$HOME/code/LinearAI/web2home" — adjust on first install.)
 3. Execute the embedded prompt with INCREMENTAL=true.
 4. After Phase 6 (self-improvement), write a row to
-   ~/web2home/.telemetry/score-history.csv.
+   ${DROPZONE}/.telemetry/score-history.csv.
 5. If mean worker score dropped ≥5 points vs. last run, post a 3-line note to
    the user's `cron-alerts` channel.
 ```

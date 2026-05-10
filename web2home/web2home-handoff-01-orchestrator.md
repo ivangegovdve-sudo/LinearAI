@@ -191,24 +191,27 @@ Stay light on context. Push reading into subagents. Push writing into files.
    of BATCH_SIZE=5 (parallel calls in ONE message per batch). Wait for each
    batch before firing the next.
 5. Each worker receives the EXACT WORKER PROMPT from
-   ~/LinearAI/web2home/web2home-handoff-02-research-worker.md, with
+   {{HANDOFF_DIR}}/web2home-handoff-02-research-worker.md, with
    {{REPO_URL}} substituted. It MUST be told to write its output to
-   ~/web2home/research/<repo-slug>.md and reply with at most 6 lines:
+   {{DROPZONE}}/research/<repo-slug>.md and reply with at most 6 lines:
    `slug:`, `score:`, `bytes:`, `sources:`, `status:`, `notes:`.
-6. After each batch, append worker results to ~/web2home/research/_index.json
-   (atomic: write to tmp, rename).
+6. After each batch, atomically append worker results to
+   {{DROPZONE}}/research/_index.json. Use Bash:
+     `python -c '...build _index.json...' > _index.json.tmp \
+        && mv _index.json.tmp _index.json`
+   (the `mv` is the atomic step on POSIX; never write `_index.json` in place).
 7. After ALL workers finish, spawn ONE synthesis subagent using the prompt
-   from web2home-handoff-03-synthesis-brainstorm.md. It writes
-   ~/web2home/synthesis/GENESIS-PLAN.md and siblings.
+   from {{HANDOFF_DIR}}/web2home-handoff-03-synthesis-brainstorm.md. It writes
+   {{DROPZONE}}/synthesis/GENESIS-PLAN.md and siblings.
 8. After synthesis, emit:
      - ~/.claude/CLAUDE.md (or merge), importing GENESIS-PLAN.md
      - ~/.claude/skills/<name>/SKILL.md  (one per skill in skill-backlog.md)
      - ~/.claude/settings.json hooks block (PreCompact, Stop, SessionStart)
      - ~/.claude/commands/<slash>.md  (one per /command in the backlog)
-     - ~/web2home/_portable/{system-prompt.txt, memory.json, skills.zip}
+     - {{DROPZONE}}/_portable/{system-prompt.txt, memory.json, skills.zip}
      - cron entries (or Routines manifest if --routine flag set)
 9. Run the self-improvement loop: append a row to
-   ~/web2home/.telemetry/score-history.csv with the schema in handoff-01 §6.
+   {{DROPZONE}}/.telemetry/score-history.csv with the schema in handoff-01 §6.
 10. Stop. Report a 10-line summary: phases done, workers OK/failed, files
     written, total tokens (estimate), score, next-action recommendation.
 
@@ -220,7 +223,7 @@ Stay light on context. Push reading into subagents. Push writing into files.
   "preserve repo list, dropzone state, current batch index".
 - If WebFetch is rate-limited, switch to `gh api repos/{owner}/{repo}` (the
   GitHub MCP, when available) or queue with backoff.
-- Idempotent: if ~/web2home/research/<slug>.md exists AND repo SHA matches the
+- Idempotent: if {{DROPZONE}}/research/<slug>.md exists AND repo SHA matches the
   recorded SHA in _index.json, SKIP the worker. Always update SHA after a run.
 
 # TARGET REPOSITORIES (full list, do not edit; 60 entries)
@@ -237,11 +240,17 @@ prompt-vault,edge-agents,adk_cloud_run,ui-inspector,awesome-crawler,
 Retrieval-based-Voice-Conversion-WebUI,local-ai-mcp-chainlit
 # (also: mempalace — used as the parity benchmark; see handoff-06 §3)
 
-# ENVIRONMENT
+# ENVIRONMENT (substitute these BEFORE pasting into your session)
 - BATCH_SIZE=5
-- DROPZONE=~/web2home
-- HANDOFF_DIR=~/LinearAI/web2home   # this suite
-- OWNER=ivangegovdve-sudo            # for fork resolution; workers also resolve to upstream
+- DROPZONE=$HOME/web2home                 # default; change if you want a different dropzone
+- HANDOFF_DIR=<path-to-this-clone>/web2home
+    # set to the absolute path of the directory containing this orchestrator file.
+    # Examples:
+    #   HANDOFF_DIR=$HOME/code/LinearAI/web2home
+    #   HANDOFF_DIR=$(git rev-parse --show-toplevel)/web2home   # if pasting from inside the repo
+    # The orchestrator MUST resolve {{HANDOFF_DIR}} and {{DROPZONE}} to absolute
+    # paths at Phase 0 and use those in every subsequent file path.
+- OWNER=ivangegovdve-sudo                 # for fork resolution; workers also resolve to upstream
 - TIMEZONE=UTC
 - DATE=2026-05-10
 
