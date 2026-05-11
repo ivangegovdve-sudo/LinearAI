@@ -12,12 +12,15 @@ Linear-oriented tooling and experiments. Free-tier-friendly workflows.
 - Prefer Node 20+ with TypeScript or Python 3.11+; no large framework until
   the first concrete workflow is defined.
 - Expected secret: `LINEAR_API_KEY` — never write it to a tracked file.
-- Branch protocol: feature work goes on `claude/<topic>-<short-rand>`;
+- Branch protocol: all work goes on `claude/<topic>-<short-rand>`;
   PRs open as draft.
 
 ## Hand-off
-- The `web2home/` directory in this repo contains the canonical handoff
-  suite (handoff-01..06). When in doubt, read handoff-01 §8.
+- The `web2home/` directory contains the canonical handoff suite
+  (handoff-01..06). When in doubt, read
+  `web2home/web2home-handoff-01-orchestrator.md` §8.
+- Swarm dropzone: `$HOME/web2home` (research, synthesis, handoff, _portable,
+  inbox, .telemetry). Configurable via `DROPZONE` in `~/.claude/settings.json`.
 
 ## Activations
 - Skills in `.claude/skills/` apply only inside this tree.
